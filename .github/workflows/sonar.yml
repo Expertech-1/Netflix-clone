@@ -28,6 +28,16 @@ jobs:
            sudo apt-get install trivy -y
            #command to scan files
            trivy fs .    
+
+      - name: Docker build and push
+        run: |
+           #run commands to build and push docker images
+           docker build --build-arg TMDB_V3_API_KEY=2f8539950a9ec25a6bd5bd8afa271311 -t netflix .
+           docker tag netflix abujulaybib/netflix:latest
+           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+           docker push abujulaybib/netflix:latest
+        env:
+           DOCKER_CLI_ACI: 1
       # If you wish to fail your job when the Quality Gate is red, uncomment the
       # following lines. This would typically be used to fail a deployment.
       # - uses: sonarsource/sonarqube-quality-gate-action@master
