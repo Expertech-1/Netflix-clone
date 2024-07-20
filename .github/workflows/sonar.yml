@@ -38,6 +38,17 @@ jobs:
            docker push abujulaybib/netflix:latest
         env:
            DOCKER_CLI_ACI: 1
+
+  deploy:
+    needs: build
+    runs-on: [Linux]
+    steps:
+      - name: Pull the docker image
+        run: docker pull abujulaybib/netflix:latest
+      - name: Trivy image scan
+        run: trivy image abujulaybib/netflix:latest
+      - name: Run the container netflix
+        run: docker run -d --name netflix -p 8081:80 abujulaybib/netflix:latest
       # If you wish to fail your job when the Quality Gate is red, uncomment the
       # following lines. This would typically be used to fail a deployment.
       # - uses: sonarsource/sonarqube-quality-gate-action@master
