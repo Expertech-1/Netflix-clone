@@ -5,7 +5,6 @@ on:
     branches:
       - main
 
-
 jobs:
   build:
     name: Build
@@ -18,40 +17,33 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-      - name: install trivy
+      - name: Install Trivy
         run: |
-           #install trivy
-           sudo apt-get install wget apt-transport-https gnupg lsb-release -y
-           wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-           echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-           sudo apt-get update
-           sudo apt-get install trivy -y
-           #command to scan files
-           trivy fs .    
+          sudo apt-get update
+          sudo apt-get install wget apt-transport-https gnupg lsb-release -y
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy -y
+      - name: Scan Code with Trivy
+        run: trivy fs .    
 
       - name: Docker build and push
         run: |
-           #run commands to build and push docker images
-           docker build --build-arg TMDB_V3_API_KEY=2f8539950a9ec25a6bd5bd8afa271311 -t netflix .
-           docker tag netflix abujulaybib/netflix:latest
-           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
-           docker push abujulaybib/netflix:latest
+          docker build --build-arg TMDB_V3_API_KEY=2f8539950a9ec25a6bd5bd8afa271311 -t netflix .
+          docker tag netflix abujulaybib/netflix:latest
+          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+          docker push abujulaybib/netflix:latest
         env:
-           DOCKER_CLI_ACI: 1
+          DOCKER_CLI_ACI: 1
 
   deploy:
     needs: build
     runs-on: [Linux]
     steps:
-      - name: Pull the docker image
+      - name: Pull the Docker image
         run: docker pull abujulaybib/netflix:latest
-      - name: Trivy image scan
+      - name: Scan Docker image with Trivy
         run: trivy image abujulaybib/netflix:latest
-      - name: Run the container netflix
+      - name: Run the container
         run: docker run -d --name netflix -p 8081:80 abujulaybib/netflix:latest
-      # If you wish to fail your job when the Quality Gate is red, uncomment the
-      # following lines. This would typically be used to fail a deployment.
-      # - uses: sonarsource/sonarqube-quality-gate-action@master
-      #   timeout-minutes: 5
-      #   env:
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
